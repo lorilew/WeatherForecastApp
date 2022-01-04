@@ -1,0 +1,39 @@
+version: "3.9"
+services:
+  todoapi:
+    image: "todoapi_todoapi"
+    ports:
+      - "8080:80"
+    links:
+      - postgresdb
+  postgresdb:
+    image: "postgres:alpine"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: fred
+      POSTGRES_DB: postgres
+    ports:
+      - "54321:5432"
+  todoapp:
+    image: "todo-app"
+    ports:
+      - 3000:3000
+    links:
+      - todoapi
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+  e2e:
+    image: cypress/included:9.2.0
+    container_name: cypress_e2e
+    depends_on:
+      todoapp:
+        condition: "service_healthy"
+    environment:
+      - CI=True
+      - CYPRESS_BASE_URL=http://todoapp:3000
+    working_dir: /tests
+    volumes:
+      - .:/tests
